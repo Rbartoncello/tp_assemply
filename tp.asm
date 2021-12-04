@@ -38,25 +38,26 @@ section  .data
     modoArchivo                         db "rb+",0
     msjErrorArchivo                     db 'Error al abrir el archivo',10,0
 
-    msjPedirOpcion                      db 'Ingrese 1 si desea ordenarlo de mayor a menor o 2 de menor a mayor',10, 0
+    msjBienvenida                       db 'Bienvenido usted tiene los siguientes numeros: ', 0
+    msjPedirOpcion                      db 'Ingrese 1 si desea ordenarlos de mayor a menor o 2 si desea ordenarlos de menor a mayor',10, 0
     formatoIngresado                    db 'hhi',0
 
-    msjErrIngreso                       db 'Error de ingreso nuemero ingresado no valido',10,0
+    msjErrIngreso                       db 'Error de ingreso numero ingresado no valido',10,0
 
-    msjVectorOrdenado                   db 'El vector quedo ordenado de la sigiente forma: ',10,0
+    msjVectorOrdenado                   db 10,'    »Los numeros quedaron ordenados de la siguiente forma: ',0
 
-    msjIniciadoCiclo                    db 'Iniciando el ciclo de i = %hhi menor a la longitud del vector',10,0
+    msjIniciadoCiclo                    db 10,'    »Iniciando el ciclo de i = %hhi menor a la longitud del vector.....',10,10,0
 
     msjNuevoOrd                         db 'Nuevo orden: ',10,0
 
-    msjTope								db	10,"el top es: %hhi",10,0
-    msjNumeroIngresado                  db	"numero ingresado = %hhi",10,0
+    msjTope								db	"El top es: %hhi",10,0
+    msjNumeroIngresado                  db	"Numero ingresado = %hhi",10,0
     msjI							    db	"i = %hhi",10,0
     msjJ								db	"j =  %hhi",10,0
-    msjVec								db	" %hhi ",0
-    msjVecJ_1							db	"vec[j - 1 ] =  %hhi",10,0
-    msjVecJ							    db	"vec[j] =  %hhi",10,0
-    msjSalto							db	' ',10,0
+    msjVec								db	"| %hhi ",0
+    msjVecJ_1							db	" Vec[%hhi] = %hhi",10,0
+    msjVecJ							    db	" Vec[%hhi] = %hhi",10,0
+    msjSalto							db	'| ',10,0
 
     msjDatoValido                       db	"Dato Valido es: %c",10,0
 
@@ -66,7 +67,7 @@ section  .data
 
     registro            times 0         db ''
         dato            times 1         db 0
-    numeroFormato									db	'%hi',0
+    numeroFormato						db	'%hi',0
 
 
 section  .bss
@@ -90,7 +91,9 @@ main:
 
     call    leerArchivo
 
-    call    pedirOpcion
+    call    imprimirMsjBienvenida
+
+    call    pedirTipoOrd
 
     call    ordenarVector         
 
@@ -99,10 +102,13 @@ errorAperturaArchivo:
     mov     rdi, msjErrorArchivo
     call    printf
 finPrograma:
-    
+    mov		rdi,msjVectorOrdenado
+    sub		rax,rax
+	call	printf
+    call    imprimirVector
+
     add     rsp,8
     ret
-
 ;------------------------------------------------------
 ;   ABRIR EL ARCHIVO
 ;------------------------------------------------------
@@ -135,35 +141,24 @@ leerVector:
     mov     rbx, 0
 
     dec     cl
-    mov	    ebx,ecx
+    ;mov	    ebx,ecx
     mov     al, [dato]
-    mov		byte[vector + ebx], al
+    mov		byte[vector + ecx], al
 
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
-    
     cmp     byte[tope],30
     
     jle     leerVector
 
 finArchivo:
-    mov		rdi,msjTope
-	sub		rsi,rsi
-	mov		esi,[tope]
-    sub		rax,rax
-	call	printf
-
     mov		rdi, [handleArchivo]
 	call	fclose
     ret
 ;------------------------------------------------------
 ;   Pedir opcion
 ;------------------------------------------------------
-pedirOpcion:
+pedirTipoOrd:
     mov     rdi, msjPedirOpcion
+    sub     rax, rax
     call    printf
 
     mov		rdi,datoIngresado
@@ -177,37 +172,18 @@ pedirOpcion:
 	call	sscanf
 	add		rsp,[plusRsp]
 
-    mov		rdi,msjNumeroIngresado
-	sub		rsi,rsi
-	mov		esi,[numero]
-    sub		rax,rax
-	call	printf
-
     call    validarIngreso
     cmp     byte[datoValido], 'N'
 
     je      errorIngreso
 
-    mov		rdi,msjDatoValido
-	sub		rsi,rsi
-	mov		esi,[datoValido]
-    sub		rax,rax
-	call	printf
-    
     ret
 errorIngreso:
-    mov		rdi,msjDatoValido
-	sub		rsi,rsi
-	mov		esi,[datoValido]
-    sub		rax,rax
-	call	printf
-
-
     mov		rdi,msjErrIngreso
     sub		rax,rax
 	call	printf
 
-    call     pedirOpcion
+    call     pedirTipoOrd
 validarIngreso:
     mov     byte[datoValido], 'N'
 
@@ -218,72 +194,64 @@ validarIngreso:
     jg      finValidacionIngreso
 
     mov     byte[datoValido], 'S'
-
 finValidacionIngreso:
     ret
+
+
+
 ordenarVector:
+    mov     al, 0
+    mov     al, byte[tope]
+    sub     al, byte[i]
+
+    cmp     al, 0
+    jg      ordenar
+    
+    ret
+
+ordenar:
     call    imprimirIniciadoCiclo
     call    imprimirVector
 
     mov     al, 0
-    mov     al, byte[tope]
-    sub     al, byte[i]
-
-    cmp     al, 0
-    jg      seguirBuscando
-
-    mov     al, 0
-    mov     al, byte[tope]
-    sub     al, byte[i]
-
-    cmp     al, 0
-    jle      imprimirMsjFinal
-
-seguirBuscando:
-    mov     al, 0
     mov     al, byte[i]
     mov     byte[j], al
 
-verficarSegundaCondicion:
+verficarMayoroMenor:
     mov     cl,byte[j]
 
     mov     rax, 0
     mov     rbx, 0
 
     dec     cl
-    mov	    ebx,ecx
-    mov		al, byte[vector + ebx]
+    ;mov	    ebx,ecx
+    mov		al, byte[vector + ecx]
     mov     byte[vectorJ_1], al
-
-    ;call    imprimirVecJ_1
 
     mov     cl,byte[j]
 
     mov     rax, 0
     mov     rbx, 0
 
-    mov	    ebx,ecx
-    mov		al, byte[vector + ebx]
+    ;mov	    ebx,ecx
+    mov		al, byte[vector + ecx]
     mov     byte[vectorJ], al
 
-    ;call    imprimirVecJ
     call    tipoOrdenamiento
-    
 
-    
-
-sigo:
+desincrementarJ:
     dec     byte[j]
 
     cmp     byte[j],0
-    jg      verficarSegundaCondicion
+    jg      verficarMayoroMenor
 
     inc     byte[i]
 
     jmp    ordenarVector
 
-
 swap:
+    call    imprimirVecJ_1
+
     mov     al, byte[vectorJ_1]
     mov     byte[aux], al
 
@@ -293,22 +261,22 @@ swap:
     mov     rbx, 0
 
     dec     cl
-    mov	    ebx,ecx
+    ;mov	    ebx,ecx
     mov		al, byte[vectorJ]
-    mov     byte[vector + ebx], al
+    mov     byte[vector + ecx], al
 
     mov     cl,byte[j]
 
     mov     rax, 0
     mov     rbx, 0
 
-    mov	    ebx,ecx
+    ;mov	    ebx,ecx
     mov		al, byte[aux]
-    mov     byte[vector + ebx], al
+    mov     byte[vector + ecx], al
 
     call    imprimirVector
 
-    jmp     sigo
+    jmp     desincrementarJ
 tipoOrdenamiento:
     cmp     byte[numero], 1
     je      ordenamientoCreciente
@@ -327,89 +295,27 @@ ordenamientoCreciente:
 
     ret
 
-
 imprimirVector:
-    mov     cl, 0
-    mov	    ebx,ecx
+	mov		cl,byte[tope]
+	mov     bl, 0
+
+sigPosicion:
+	push	rcx
 
     mov		rdi,msjVec
 	sub		rsi,rsi
 	mov		esi,[vector + ebx]
     sub		rax,rax
 	call	printf
+    
+    pop		rcx
+    inc     bl
 
-    mov     cl, 1
-    mov	    ebx,ecx
-
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
-
-    mov     cl, 2
-    mov	    ebx,ecx
-
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
-
-    mov     cl, 3
-    mov	    ebx,ecx
-
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
-
-    mov     cl, 4
-    mov	    ebx,ecx
-
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
-
-    mov     cl, 5
-    mov	    ebx,ecx
-
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
-
-    mov     cl, 6
-    mov	    ebx,ecx
-
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
-
-    mov     cl, 7
-    mov	    ebx,ecx
-
-    mov		rdi,msjVec
-	sub		rsi,rsi
-	mov		esi,[vector + ebx]
-    sub		rax,rax
-	call	printf
+	loop	sigPosicion	
 
     mov		rdi,msjSalto
     sub		rax,rax
 	call	printf
-
-    ret
-
-imprimirSalto:
-    mov     rdi, msjSalto
-    call    printf
 
     ret
 
@@ -440,40 +346,29 @@ ret
 imprimirVecJ_1:
     mov		rdi,msjVecJ_1
 	sub		rsi,rsi
-	mov		esi,[vectorJ_1]
+    sub		rdx,rdx
+	mov		esi,[j]
+    dec     esi
+	mov		edx,[vectorJ_1]
     sub		rax,rax
 	call	printf
-    
-
 imprimirVecJ:
     mov		rdi,msjVecJ
 	sub		rsi,rsi
-	mov		esi,[vectorJ]
+    sub		rdx,rdx
+	mov		esi,[j]
+	mov		edx,[vectorJ]
     sub		rax,rax
 	call	printf
 ret
 
-imprimirMsjFinal:
-    mov		rdi,msjVectorOrdenado
-    sub		rax,rax
-	call	printf
+imprimirMsjBienvenida:
+    mov     rdi, msjBienvenida
+    sub     rax, rax
+    call    printf
+
     call    imprimirVector
-
-    jmp     finPrograma
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ret
 
 ;----------------------------------------
 ;----------------------------------------
